@@ -18,7 +18,11 @@ public:
 
   DistanceMatrix& operator=(const DistanceMatrix&);
 
-  void showMatrix();
+  void showMatrix() const;
+  const int *getIndexTable()const{return indexTable;}
+  int getSize()const {return size;}
+  int getIndex(int);
+  float getValue(int, int);
 };
 
 

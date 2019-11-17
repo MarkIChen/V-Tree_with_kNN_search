@@ -54,9 +54,9 @@ float g6Value[] = {
   0, 1, 2, 4, 1, 0, 3, 5, 2, 3, 0, 2, 4, 5, 2, 0
 };
 int g6IndexTable[] = {13, 14, 15, 16};
-
 int gxSize[] = {5, 5, 3, 4, 4, 4, 4};
 
 float *gxValue[] = {g0Value, g1Value, g2Value, g3Value, g4Value, g5Value, g6Value};
-
 int *gxIndexTable[] = {g0IndexTable, g1IndexTable, g2IndexTable, g3IndexTable, g4IndexTable, g5IndexTable, g6IndexTable};
+
+int boundaryVertexIndex[] = {2, 3, 4, 5, 6, 9, 10, 13};
