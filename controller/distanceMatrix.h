@@ -21,8 +21,9 @@ public:
   void showMatrix() const;
   const int *getIndexTable()const{return indexTable;}
   int getSize()const {return size;}
-  int getIndex(int);
-  float getValue(int, int);
+  int getIndex(int) const;
+  int getVertexIndex(int i) const {return indexTable[i];};
+  float getValue(int, int) const;
 };
 
 

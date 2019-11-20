@@ -1,8 +1,7 @@
 #include "V-Tree.h"
 #include <stdlib.h>
-using namespace std;
-typedef std::numeric_limits<float> floatMax;
 
+using namespace std;
 ActiveObject::ActiveObject(Vehicle vehicle, float distance)
     : vehicle(vehicle), distance(distance) {}
 
@@ -15,11 +14,14 @@ void LNAV::showActiveObjecList() const {
 }
 
 LNAV::LNAV()
-    : distance(floatMax::max_digits10), activeVertex(-1),
-      isBoundaryVertex(false) {}
+    : distance(floatMax - 1), nearestActiveVertex(-1), isBoundaryVertex(false) {
+
+}
 
 bool LNAV::pushObject(ActiveObject &newObject) {
   activeObjectList.push_back(newObject);
+  nearestActiveVertex = newObject.getObjectVehicle().getDesVertexIndex();
+  distance = 0;
   return true;
 }
 
@@ -87,22 +89,32 @@ bool VTree::setRightNode(const VTree &newRightNode) {
 
 bool VTree::insertObject(const Vehicle &newVehicle) {
   int insertVertex = newVehicle.getDesVertexIndex();
-  VTree &leaf = getLeaveOfIndex(*this, insertVertex);
+  int layer = getLayer(*this);
 
-  int arrIndex = leaf.distanceMatrix.getIndex(insertVertex);
-  if (arrIndex == -1) {
-    cout << "Insert Object Error." << endl;
-    return false;
+  if (layer == 0) {
+    int arrIndex = distanceMatrix.getIndex(insertVertex);
+    if (arrIndex == -1) {
+      cout << "Insert Object Error." << endl;
+      return false;
+    }
+    float randDis =
+        rand() %
+        int(distanceMatrix.getValue(newVehicle.getEdgeVertexIndexFirst(),
+                                    newVehicle.getEdgeVertexIndexSecond()));
+    ActiveObject object(newVehicle, randDis);
+    LNAVList[arrIndex].pushObject(object);
+    updateNodeLNAV();
+    return true;
   }
-  float randDis =
-      rand() %
-      int(leaf.distanceMatrix.getValue(newVehicle.getEdgeVertexIndexFirst(),
-                                       newVehicle.getEdgeVertexIndexSecond()));
 
-  ActiveObject object(newVehicle, randDis);
-  leaf.LNAVList[arrIndex].pushObject(object);
-  cout << "pass" << endl;
-  return true;
+  VTree *target = ((insertVertex - 1) / (layer * VERTEX_PER_NODE)) % 2
+                      ? rightNode
+                      : leftNode;
+  if (target->insertObject(newVehicle) == true) {
+    updateNodeLNAV();
+    return true;
+  }
+  return false;
 }
 
 void VTree::showTree() const {
@@ -119,12 +131,24 @@ void VTree::showTree() const {
     cout << boundaryVertexList[i] << " ";
   }
   cout << endl;
+  for (int i = 0; i < LNAVList.size(); i++) {
+    cout << "v:" << distanceMatrix.getVertexIndex(i)
+         << ", distance = " << LNAVList[i].getDistance()
+         << ", active Vertex = " << LNAVList[i].getnearestActiveVertex()
+         << endl;
+  }
+  cout << endl;
 }
 
 bool VTree::setBoundaryVertexList(int *vertexList, int listSize) {
   for (int i = 0; i < listSize; i++) {
-    VTree &leaf = getLeaveOfIndex(*this, vertexList[i]);
-    leaf.boundaryVertexList.push_back(vertexList[i]);
+    if (distanceMatrix.getIndex(vertexList[i]) != -1) {
+      boundaryVertexList.push_back(vertexList[i]);
+    }
+  }
+  if (getLayer(*this) != 0) {
+    leftNode->setBoundaryVertexList(vertexList, listSize);
+    rightNode->setBoundaryVertexList(vertexList, listSize);
   }
   return true;
 }
@@ -148,4 +172,174 @@ VTree &VTree::getLeaveOfIndex(VTree &root, int searchIndex) {
 
   return cluster % 2 ? getLeaveOfIndex(*root.rightNode, searchIndex)
                      : getLeaveOfIndex(*root.leftNode, searchIndex);
+}
+
+const vector<int> VTree::getActiveVertexList() {
+  vector<int> activeVertexList(0);
+  if (getLayer(*this) != 0) {
+    cout << "Error in getActiveVertexList, this is not leaf" << endl;
+    return activeVertexList;
+  }
+
+  for (int i = 0; i < LNAVList.size(); i++) {
+    if (LNAVList[i].getDistance() == 0) {
+      activeVertexList.push_back(distanceMatrix.getIndexTable()[i]);
+    }
+  }
+  return activeVertexList;
+}
+
+void VTree::updateNodeLNAV() {
+  // leaf
+  if (getLayer(*this) == 0) {
+    vector<int> activeVertexList = getActiveVertexList();
+    for (int i = 0; i < LNAVList.size(); i++) {
+      if (LNAVList[i].getDistance() == 0) {
+        continue;
+      }
+      float minDis = LNAVList[i].getDistance();
+      for (int j = 0; j < activeVertexList.size(); j++) {
+        float distance = distanceMatrix.getValue(
+            distanceMatrix.getVertexIndex(i), activeVertexList[j]);
+        if (distance < minDis) {
+          LNAVList[i].setDistance(distance);
+          LNAVList[i].setNearestActiveVertex(activeVertexList[j]);
+        }
+      }
+    }
+    return;
+  }
+  // not leaf
+  vector<vector<int> > borderList;
+  borderList.push_back(getBoundariesListInSameSide(LEFT_SIDE));
+  borderList.push_back(getBoundariesListInSameSide(RIGHT_SIDE));
+
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < borderList[i].size(); j++) {
+      int arrIndex = distanceMatrix.getIndex(borderList[i][j]);
+      VTree target = (i == 0) ? *leftNode : *rightNode;
+      int targetArrIndex = target.distanceMatrix.getIndex(borderList[i][j]);
+      float minDis = target.LNAVList[targetArrIndex].getDistance();
+
+      LNAVList[arrIndex].setDistance(minDis);
+      LNAVList[arrIndex].setNearestActiveVertex(
+          target.LNAVList[targetArrIndex].getnearestActiveVertex());
+
+      target = (i == 0) ? *rightNode : *leftNode;
+      for (int p = 0; p < borderList[(i + 1) % 2].size(); p++) {
+        // to boundary of another leaf node
+        int crossLength = distanceMatrix.getValue(borderList[i][j],
+                                                  borderList[(i + 1) % 2][p]);
+        if (crossLength < minDis) {
+
+          int targetArrIndex =
+              target.distanceMatrix.getIndex(borderList[(i + 1) % 2][p]);
+          int crossGraphTotalLength =
+              crossLength + target.LNAVList[targetArrIndex].getDistance();
+          if (crossGraphTotalLength < minDis) {
+            LNAVList[arrIndex].setDistance(crossGraphTotalLength);
+            LNAVList[arrIndex].setNearestActiveVertex(
+                target.LNAVList[targetArrIndex].getnearestActiveVertex());
+          }
+        }
+      }
+    }
+  }
+}
+char VTree::getNodeSide(int vertexIndex) const {
+  int layer = getLayer(*this);
+  return ((vertexIndex - 1) / (layer * VERTEX_PER_NODE)) % 2;
+}
+
+float VTree::SPDist(int vertexIndex1, int vertexIndex2) const {
+  // on the shortest distance matrix -> return the value directely
+  if (distanceMatrix.getIndex(vertexIndex1) != -1 &&
+      distanceMatrix.getIndex(vertexIndex2) != -1) {
+    return distanceMatrix.getValue(vertexIndex1, vertexIndex2);
+  }
+  // at the same side, pass to the node
+  if (getNodeSide(vertexIndex1) == getNodeSide(vertexIndex2)) {
+    return getNodeSide(vertexIndex1) == LEFT_SIDE
+               ? leftNode->SPDist(vertexIndex1, vertexIndex2)
+               : rightNode->SPDist(vertexIndex1, vertexIndex2);
+  }
+  vector<int> sideABoundList =
+      getBoundariesListInSameSide(getNodeSide(vertexIndex1));
+  vector<int> sideBBoundList =
+      getBoundariesListInSameSide(getNodeSide(vertexIndex2));
+
+  vector<float> sideASLengthList =
+      getShortestDisList(sideABoundList, vertexIndex1);
+  vector<float> sideBSLengthList =
+      getShortestDisList(sideBBoundList, vertexIndex2);
+
+  float shortestDistance = floatMax;
+  for (int i = 0; i < sideASLengthList.size(); i++) {
+    for (int j = 0; j < sideBBoundList.size(); j++) {
+      float BToB =
+          distanceMatrix.getValue(sideABoundList[i], sideBBoundList[j]);
+      float candidate = sideASLengthList[i] + sideBSLengthList[j] + BToB;
+      if (candidate < shortestDistance)
+        shortestDistance = candidate;
+    }
+  }
+  return shortestDistance;
+}
+
+const vector<float> VTree::getShortestDisList(const vector<int> targetList,
+                                              int vertexIndex) const {
+  vector<float> result;
+  for (int i = 0; i < targetList.size(); i++) {
+    float shortestLength = getNodeSide(vertexIndex) == LEFT_SIDE
+                               ? leftNode->SPDist(targetList[i], vertexIndex)
+                               : rightNode->SPDist(targetList[i], vertexIndex);
+    result.push_back(shortestLength);
+  }
+  return result;
+}
+const vector<int> VTree::getBoundariesListInSameSide(char targetSide) const {
+  vector<int> result(0);
+  // char targetSide = getNodeSide(vertexIndex);
+  for (int i = 0; i < LNAVList.size(); i++) {
+    if (targetSide == getNodeSide(distanceMatrix.getVertexIndex(i))) {
+      result.push_back(distanceMatrix.getVertexIndex(i));
+    }
+  }
+  return result;
+}
+const VTree &VTree::getVertexSideNode(int vertexIndex) const {
+  int layer = getLayer(*this);
+  return ((vertexIndex - 1) / (layer * VERTEX_PER_NODE)) % 2 ? *rightNode
+                                                             : *leftNode;
+}
+
+const GNAVData VTree::gnav(int vertexIndex) const {
+  if (getLayer(*this) == 0) {
+    int arrIndex = distanceMatrix.getIndex(vertexIndex);
+    if (arrIndex == -1) {
+      cout << "ERROR: This node do not have this vertex." << endl;
+    }
+    // return LNAVList[arrIndex];
+    GNAVData result = {LNAVList[arrIndex].getnearestActiveVertex(),
+                       LNAVList[arrIndex].getDistance()};
+    return result;
+  }
+
+  GNAVData shortDisVertex = getVertexSideNode(vertexIndex).gnav(vertexIndex);
+
+  vector<int> sideBoundList =
+      getBoundariesListInSameSide(getNodeSide(vertexIndex));
+  for (int i = 0; i < sideBoundList.size(); i++) {
+    int arrIndex = distanceMatrix.getIndex(sideBoundList[i]);
+    if (LNAVList[arrIndex].getDistance() < shortDisVertex.shortestDistance) {
+
+      int candidate = SPDist(vertexIndex, sideBoundList[i]) +
+                      LNAVList[arrIndex].getDistance();
+      if (candidate < shortDisVertex.shortestDistance) {
+        GNAVData result = {LNAVList[i].getnearestActiveVertex(), candidate};
+        shortDisVertex = result;
+      }
+    }
+  }
+  return shortDisVertex;
 }

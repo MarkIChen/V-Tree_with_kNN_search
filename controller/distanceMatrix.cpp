@@ -53,16 +53,16 @@ DistanceMatrix::~DistanceMatrix() {
   delete indexTable;
 }
 
-int DistanceMatrix::getIndex(int vertexIndex){
+int DistanceMatrix::getIndex(int vertexIndex) const{
   for(int i =0;i<size;i++){
     if(indexTable[i] == vertexIndex) return i;
   }
-  cout << "DistanceMatrix --> error:cannot find index in indextable."<<endl;
+  // cout << "DistanceMatrix --> error:cannot find index in indextable."<<endl;
   return -1;
 }
 
-float DistanceMatrix::getValue(int index1, int index2){
-  int arrIndexRow = getIndex(index1);
-  int arrIndexCol = getIndex(index2);
+float DistanceMatrix::getValue(int vertexIndex1, int vertexIndex2) const{
+  int arrIndexRow = getIndex(vertexIndex1);
+  int arrIndexCol = getIndex(vertexIndex2);
   return value[arrIndexRow * size + arrIndexCol];
 }

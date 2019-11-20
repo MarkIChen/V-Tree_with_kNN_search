@@ -12,7 +12,7 @@ private:
 
 public:
   static int vehicleCount;
-  Vehicle(int, int, int);
+  Vehicle(int, int);
 
   int getVehicleIndex() const {return vehicleIndex;}
   int getDesVertexIndex() const {return desVertexIndex;}

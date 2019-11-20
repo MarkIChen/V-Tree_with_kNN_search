@@ -1,8 +1,8 @@
 #include "Vehicle.h"
 
 
-Vehicle::Vehicle(int desVertexIndex, int edgeVertexIndexFirst,
+Vehicle::Vehicle(int edgeVertexIndexFirst,
                  int edgeVertexIndexSecond)
-    : vehicleIndex(vehicleCount++), desVertexIndex(desVertexIndex),
+    : vehicleIndex(vehicleCount++), desVertexIndex(edgeVertexIndexSecond),
       edgeVertexIndexFirst(edgeVertexIndexFirst),
       edgeVertexIndexSecond(edgeVertexIndexSecond) {}

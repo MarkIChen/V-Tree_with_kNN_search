@@ -1,7 +1,10 @@
 #ifndef V_TREE_H
 #define  V_TREE_H
 # define VERTEX_PER_NODE 4
-
+// #define floatMax std::numeric_limits<float>::max()
+#define floatMax 99999999
+#define LEFT_SIDE 0
+#define RIGHT_SIDE 1
 #include <iostream>
 #include "vertex.h"
 #include "Vehicle.h"
@@ -27,23 +30,24 @@ public:
 class LNAV {
 private:
   float distance;
-  int activeVertex;
+  int nearestActiveVertex;
   bool isBoundaryVertex;
   vector<ActiveObject> activeObjectList;
 public:
   LNAV();
 
   void setDistance(int newDistance){distance = newDistance;}
-  void setActiveVertex(int vertex){activeVertex = vertex;}
+  void setNearestActiveVertex(int vertex){nearestActiveVertex = vertex;}
 
-  float getDistance(){return distance;}
-  int getActiveVertex(){return activeVertex;}
+  float getDistance() const {return distance;}
+  int getnearestActiveVertex() const {return nearestActiveVertex;}
 
   bool pushObject(ActiveObject &);
   const vector<ActiveObject> getActiveObjectList(){return activeObjectList;}
   void showActiveObjecList() const;
   void setBoundaryVertex() {isBoundaryVertex = true;};
 };
+struct GNAVData{int vertexIndex; float shortestDistance;};
 
 class VTree {
 private:
@@ -54,6 +58,11 @@ private:
 
   static int getLayer(const VTree&);
   static VTree& getLeaveOfIndex(VTree&, int);
+
+  void updateAllLeaves();
+  void updateNodeLNAV();
+  const vector<int> getBoundariesListInSameSide(char) const;
+  const vector<float> getShortestDisList(const vector<int>, int) const;
 public:
   const static int vertexNumPerLeaf = 4;
   VTree *leftNode;
@@ -77,7 +86,14 @@ public:
   void showTree() const;
   const DistanceMatrix& getDistanceMatrix()const{return distanceMatrix;};
 
+  const vector<int> getActiveVertexList();//only for leaf
 
+  float SPDist(int, int) const;
+  char getNodeSide(int) const;
+
+  const VTree &getVertexSideNode(int)const;
+
+  const GNAVData gnav(int vertexIndex) const;
 
 };
 
