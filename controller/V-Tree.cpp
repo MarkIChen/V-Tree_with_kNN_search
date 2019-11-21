@@ -117,6 +117,40 @@ bool VTree::insertObject(const Vehicle &newVehicle) {
   return false;
 }
 
+bool VTree::deleteObject(const Vehicle &targetVehicle) {
+  int desVertexIndex = targetVehicle.getDesVertexIndex();
+  int veichleIndex = targetVehicle.getVehicleIndex();
+  int layer = getLayer(*this);
+
+  if (layer == 0) {
+    int arrIndex = distanceMatrix.getIndex(desVertexIndex);
+    vector<ActiveObject> newList = LNAVList[arrIndex].getActiveObjectList();
+    for (int i = 0; i < newList.size(); i++) {
+      if (newList[i].getObjectVehicle().getVehicleIndex() == veichleIndex) {
+        newList.erase(newList.begin() + i);
+        LNAVList[arrIndex].setNearstActiveVertexList(newList);
+        break;
+      }
+    }
+    if (newList.size() == 0) {
+      for(int i=0;i<LNAVList.size();i++){
+        if(LNAVList[i].getnearestActiveVertex() == desVertexIndex){
+          LNAVList[i].setNearestActiveVertex(-1);
+          LNAVList[i].setDistance(floatMax);
+        }
+      }
+    }
+    updateNodeLNAV();
+    return true;
+  }
+  if (getVertexSideNode(desVertexIndex).deleteObject(targetVehicle) == false) {
+    cout << "failed to delete vehicle" << endl;
+    return false;
+  }
+  updateNodeLNAV();
+  return true;
+}
+
 void VTree::showTree() const {
   cout << "my distanceMatrix: " << endl;
   distanceMatrix.showMatrix();
@@ -246,6 +280,7 @@ void VTree::updateNodeLNAV() {
     }
   }
 }
+
 char VTree::getNodeSide(int vertexIndex) const {
   int layer = getLayer(*this);
   return ((vertexIndex - 1) / (layer * VERTEX_PER_NODE)) % 2;
@@ -307,7 +342,8 @@ const vector<int> VTree::getBoundariesListInSameSide(char targetSide) const {
   }
   return result;
 }
-const VTree &VTree::getVertexSideNode(int vertexIndex) const {
+
+VTree &VTree::getVertexSideNode(int vertexIndex) const {
   int layer = getLayer(*this);
   return ((vertexIndex - 1) / (layer * VERTEX_PER_NODE)) % 2 ? *rightNode
                                                              : *leftNode;
@@ -342,4 +378,25 @@ const GNAVData VTree::gnav(int vertexIndex) const {
     }
   }
   return shortDisVertex;
+}
+
+const GNAVData VTree::nnav(int vertexIndex, const GNAVData previousGNAV) {
+  if (previousGNAV.vertexIndex == -1) return previousGNAV;
+  VTree copyTree(*this);
+  GNAVData firstNAV;
+  do{
+    firstNAV = copyTree.gnav(vertexIndex);
+    //delet active object list
+    VTree *ptTree = &copyTree;
+    while(getLayer(*ptTree)>0){
+      ptTree = &ptTree->getVertexSideNode(firstNAV.vertexIndex);
+    }
+    int arrIndex = ptTree->distanceMatrix.getIndex(firstNAV.vertexIndex);
+    vector<ActiveObject> targetList = ptTree->LNAVList[arrIndex].getActiveObjectList();
+    for(int i=0;i<targetList.size();i++){
+      copyTree.deleteObject(targetList[i].getObjectVehicle());
+    }
+  } while(firstNAV.vertexIndex != previousGNAV.vertexIndex);
+
+  return copyTree.gnav(vertexIndex);
 }

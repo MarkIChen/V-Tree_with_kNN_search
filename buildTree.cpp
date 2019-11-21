@@ -53,8 +53,11 @@ int main() {
   vehicleList.push_back(Vehicle(9, 11));
   vehicleList.push_back(Vehicle(16, 15));
 
-  for (int i = 0; i < vehicleList.size(); i++)
-    root.insertObject(vehicleList[i]);
+  // for (int i = 0; i < vehicleList.size(); i++)
+  //   root.insertObject(vehicleList[i]);
+
+  // root.deleteObject(vehicleList[0]);
+  // root.deleteObject(vehicleList[2]);
 
   root.showTree();
   root.leftNode->showTree();
@@ -72,11 +75,21 @@ int main() {
   //   }
   // }
   cout << "-------------------" << endl;
-  for (int i = 1; i < 17; i++) {
-    int vertex = i;
-    cout << "i = "<<i << ", gnav = " << root.gnav(vertex).vertexIndex
-         << ", dis = " << root.gnav(vertex).shortestDistance << endl;
-  }
+  GNAVData gnavVertex = root.gnav(2);
+  cout << "gnav: " << gnavVertex.vertexIndex
+       << ", dis = " << gnavVertex.shortestDistance << endl;
+
+  gnavVertex = root.nnav(2, gnavVertex);
+  cout << "gnav: " << gnavVertex.vertexIndex
+       << ", dis = " << gnavVertex.shortestDistance << endl;
+
+  gnavVertex = root.nnav(2, gnavVertex);
+  cout << "gnav: " << gnavVertex.vertexIndex
+       << ", dis = " << gnavVertex.shortestDistance << endl;
+
+       gnavVertex = root.nnav(2, gnavVertex);
+       cout << "gnav: " << gnavVertex.vertexIndex
+            << ", dis = " << gnavVertex.shortestDistance << endl;
 
   //
   // for(int i =0;i<treeNodeNumber;i++){
