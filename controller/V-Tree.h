@@ -77,6 +77,8 @@ private:
   const vector<float> getShortestDisList(const vector<int>, int) const;
   const vector<ActiveObject> getActiveObjectListofIndex(int vertexIndex)const;
 
+  float getDistance(int, int) const;
+
 public:
   const static int vertexNumPerLeaf = 4;
   VTree *leftNode;
@@ -92,7 +94,7 @@ public:
   bool setLeftNode(const VTree &);
   bool setRightNode(const VTree &);
 
-  bool insertObject(const Vehicle &);
+  bool insertObject(const Vehicle &, int dis = -1);
   bool deleteObject(const Vehicle &);
 
   bool setBoundaryVertexList(int *, int);
@@ -106,7 +108,7 @@ public:
 
 
   const GNAVData gnav(int vertexIndex) const;
-  const GNAVData nnav(int vertexIndex, const GNAVData) ;
+  const GNAVData nnav(int vertexIndex, const GNAVData) const;
   vector<GNAVData> knn(int vertexIndex, int k) const;
 
 };

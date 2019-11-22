@@ -90,21 +90,20 @@ bool VTree::setRightNode(const VTree &newRightNode) {
   return true;
 }
 
-bool VTree::insertObject(const Vehicle &newVehicle) {
+bool VTree::insertObject(const Vehicle &newVehicle, int dis) {
   int insertVertex = newVehicle.getDesVertexIndex();
   int layer = getLayer(*this);
 
   if (layer == 0) {
     int arrIndex = distanceMatrix.getIndex(insertVertex);
+
     if (arrIndex == -1) {
       cout << "Insert Object Error." << endl;
       return false;
     }
-    float randDis =
-        rand() %
-        int(distanceMatrix.getValue(newVehicle.getEdgeVertexIndexFirst(),
-                                    newVehicle.getEdgeVertexIndexSecond()));
-    ActiveObject object(newVehicle, randDis);
+
+    ActiveObject object(newVehicle, dis);
+
     LNAVList[arrIndex].pushObject(object);
     updateNodeLNAV();
     return true;
@@ -113,11 +112,35 @@ bool VTree::insertObject(const Vehicle &newVehicle) {
   VTree *target = ((insertVertex - 1) / (layer * VERTEX_PER_NODE)) % 2
                       ? rightNode
                       : leftNode;
-  if (target->insertObject(newVehicle) == true) {
+  int ranDis = dis;
+  if(dis<0){
+    srand(time(0));
+    int shortDis = int(getDistance(newVehicle.getEdgeVertexIndexFirst(),
+                                newVehicle.getEdgeVertexIndexSecond()));
+    if(shortDis == -1){
+      return false;
+    }
+    ranDis= rand() % shortDis;
+  }
+  if (target->insertObject(newVehicle, ranDis) == true) {
     updateNodeLNAV();
     return true;
   }
   return false;
+}
+
+float VTree::getDistance(int vertexA, int vertexB) const{
+
+  float dis = distanceMatrix.getValue(vertexA, vertexB);
+  if(getLayer(*this) == 0 && dis == -1){
+    return -1;
+  }
+
+  if(dis != -1){
+    return dis;
+  }
+
+  return getVertexSideNode(vertexA).getDistance(vertexA, vertexB);
 }
 
 bool VTree::deleteObject(const Vehicle &targetVehicle) {
@@ -392,7 +415,7 @@ const vector<ActiveObject> VTree::getActiveObjectListofIndex(int vertexIndex)con
   return ptTree->LNAVList[arrIndex].getActiveObjectList();
 }
 
-const GNAVData VTree::nnav(int vertexIndex, const GNAVData previousGNAV) {
+const GNAVData VTree::nnav(int vertexIndex, const GNAVData previousGNAV) const {
   if (previousGNAV.vertexIndex == -1) return previousGNAV;
   VTree copyTree(*this);
   GNAVData firstNAV;
@@ -411,21 +434,37 @@ const GNAVData VTree::nnav(int vertexIndex, const GNAVData previousGNAV) {
 
 vector<GNAVData> VTree::knn(int vertexIndex, int k) const{
   vector<GNAVData> queue(k);  //GNAVData
-  float maxDis = floatMax;
 
   // in leaf
-  GNAVData localNAV = gnav(vertexIndex);
-  const vector<ActiveObject> activeObjectList =  getActiveObjectListofIndex(localNAV.vertexIndex);
+  GNAVData currentNAV = gnav(vertexIndex);
+  const vector<ActiveObject> activeObjectList =  getActiveObjectListofIndex(currentNAV.vertexIndex);
 
   for(int i=0;i<activeObjectList.size();i++){
-    float candidate = SPDist(localNAV.vertexIndex, vertexIndex) + activeObjectList[i].getDistance();
+    float candidate = SPDist(currentNAV.vertexIndex, vertexIndex) + activeObjectList[i].getDistance();
     if(candidate < queue[k-1].shortestDistance) {
-      queue.insert(queue.begin(), GNAVData(localNAV.vertexIndex, candidate));
+      queue.insert(queue.begin(), GNAVData(currentNAV.vertexIndex, candidate));
       queue.erase(queue.end()-1);
     }
     // sort
     std::sort(queue.begin(), queue.end(), compareGNAVData);
   }
-  // TODO:: nnav's 
+  // TODO:: nnav's
+  while(true) {
+    currentNAV = nnav(vertexIndex, currentNAV);
+    if(currentNAV.vertexIndex == -1) break;
+    if(SPDist(currentNAV.vertexIndex, vertexIndex) >= queue[k-1].shortestDistance){
+      break;
+    }
+    const vector<ActiveObject> activeObjectList =  getActiveObjectListofIndex(currentNAV.vertexIndex);
+    for(int i=0;i<activeObjectList.size();i++){
+      float candidate = SPDist(currentNAV.vertexIndex, vertexIndex) + activeObjectList[i].getDistance();
+      if(candidate < queue[k-1].shortestDistance) {
+        queue.insert(queue.begin(), GNAVData(currentNAV.vertexIndex, candidate));
+        queue.erase(queue.end()-1);
+      }
+      // sort
+      std::sort(queue.begin(), queue.end(), compareGNAVData);
+    }
+  }
   return queue;
 }

@@ -13,8 +13,6 @@ int boundaryVertexListSize = 8;
 int Vehicle::vehicleCount = 0;
 
 int main() {
-  cout << " floatMax" << floatMax << endl;
-
   srand(time(0));
   DistanceMatrix gxDistanceMatrix[treeNodeNumber];
   for (int i = 0; i < treeNodeNumber; i++) {
@@ -41,34 +39,43 @@ int main() {
   root.setRightNode(g2);
   root.setBoundaryVertexList(boundaryVertexIndex, boundaryVertexListSize);
 
-  root.showTree();
-  root.leftNode->showTree();
-
   cout << "-----------------" << endl;
 
   vector<Vehicle> vehicleList;
+  vehicleList.push_back(Vehicle(1, 4));
   vehicleList.push_back(Vehicle(2, 4));
   vehicleList.push_back(Vehicle(2, 4));
-  vehicleList.push_back(Vehicle(2, 4));
-  vehicleList.push_back(Vehicle(2, 4));
+  vehicleList.push_back(Vehicle(3, 6));
+  vehicleList.push_back(Vehicle(3, 6));
   vehicleList.push_back(Vehicle(8, 5));
+  vehicleList.push_back(Vehicle(8, 5));
+  vehicleList.push_back(Vehicle(7, 8));
+  vehicleList.push_back(Vehicle(2, 9));
+  vehicleList.push_back(Vehicle(6, 13));
+  vehicleList.push_back(Vehicle(3, 13));
   vehicleList.push_back(Vehicle(6, 8));
   vehicleList.push_back(Vehicle(9, 11));
   vehicleList.push_back(Vehicle(16, 15));
 
-  for (int i = 0; i < vehicleList.size(); i++)
-    root.insertObject(vehicleList[i]);
+
+  for (int i = 0; i < vehicleList.size(); i++){
+    if(root.insertObject(vehicleList[i]) == false){
+      cout <<"insert an object failed"<<endl;
+    }
+  }
+
+
 
   // root.deleteObject(vehicleList[0]);
   // root.deleteObject(vehicleList[2]);
 
-  root.showTree();
-  root.leftNode->showTree();
-  root.rightNode->showTree();
-  root.leftNode->leftNode->showTree();
-  root.leftNode->rightNode->showTree();
+  // root.showTree();
+  // root.leftNode->showTree();
+  // root.rightNode->showTree();
+  // root.leftNode->leftNode->showTree();
+  // root.leftNode->rightNode->showTree();
   root.rightNode->leftNode->showTree();
-  root.rightNode->rightNode->showTree();
+  // root.rightNode->rightNode->showTree();
 
   cout << "-------------------" << endl;
   // SPDist
@@ -78,27 +85,33 @@ int main() {
   //   }
   // }
   cout << "-------------------" << endl;
-  GNAVData gnavVertex = root.gnav(2);
-  cout << "gnav: " << gnavVertex.vertexIndex
-       << ", dis = " << gnavVertex.shortestDistance << endl;
-
-  gnavVertex = root.nnav(2, gnavVertex);
-  cout << "gnav: " << gnavVertex.vertexIndex
-       << ", dis = " << gnavVertex.shortestDistance << endl;
-
-  gnavVertex = root.nnav(2, gnavVertex);
-  cout << "gnav: " << gnavVertex.vertexIndex
-       << ", dis = " << gnavVertex.shortestDistance << endl;
-
-       gnavVertex = root.nnav(2, gnavVertex);
-       cout << "gnav: " << gnavVertex.vertexIndex
-            << ", dis = " << gnavVertex.shortestDistance << endl;
+  // GNAVData gnavVertex = root.gnav(2);
+  // cout << "gnav: " << gnavVertex.vertexIndex
+  //      << ", dis = " << gnavVertex.shortestDistance << endl;
+  //
+  // gnavVertex = root.nnav(2, gnavVertex);
+  // cout << "gnav: " << gnavVertex.vertexIndex
+  //      << ", dis = " << gnavVertex.shortestDistance << endl;
+  //
+  // gnavVertex = root.nnav(2, gnavVertex);
+  // cout << "gnav: " << gnavVertex.vertexIndex
+  //      << ", dis = " << gnavVertex.shortestDistance << endl;
+  //
+  //      gnavVertex = root.nnav(2, gnavVertex);
+  //      cout << "gnav: " << gnavVertex.vertexIndex
+  //           << ", dis = " << gnavVertex.shortestDistance << endl;
 
   cout << "-------------------" << endl;
-  vector<GNAVData> knnList = root.knn(5, 3);
-  for(int i=0;i<knnList.size();i++){
-    cout <<"vertex: "<<knnList[i].vertexIndex<<", dis = "<<knnList[i].shortestDistance<<endl;
+
+  for(int j=1;j<16;j++){
+    cout << "j = " <<j <<"  --------------------"<<endl;
+    vector<GNAVData> knnList = root.knn(j, 4);
+    for(int i=0;i<knnList.size();i++){
+      cout <<"vertex: "<<knnList[i].vertexIndex<<", dis = "<<knnList[i].shortestDistance<<endl;
+    }
+    cout <<"=================="<<endl;
   }
+
 
 
   //

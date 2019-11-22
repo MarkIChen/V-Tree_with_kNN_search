@@ -64,5 +64,12 @@ int DistanceMatrix::getIndex(int vertexIndex) const{
 float DistanceMatrix::getValue(int vertexIndex1, int vertexIndex2) const{
   int arrIndexRow = getIndex(vertexIndex1);
   int arrIndexCol = getIndex(vertexIndex2);
+
+  if(arrIndexRow == -1 || arrIndexCol ==-1){
+    if(vertexIndex1 == 3) {
+      cout <<"return -1"<<endl;
+    }
+    return -1;
+  }
   return value[arrIndexRow * size + arrIndexCol];
 }
