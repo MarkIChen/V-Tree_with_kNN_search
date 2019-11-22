@@ -48,13 +48,16 @@ int main() {
 
   vector<Vehicle> vehicleList;
   vehicleList.push_back(Vehicle(2, 4));
+  vehicleList.push_back(Vehicle(2, 4));
+  vehicleList.push_back(Vehicle(2, 4));
+  vehicleList.push_back(Vehicle(2, 4));
   vehicleList.push_back(Vehicle(8, 5));
   vehicleList.push_back(Vehicle(6, 8));
   vehicleList.push_back(Vehicle(9, 11));
   vehicleList.push_back(Vehicle(16, 15));
 
-  // for (int i = 0; i < vehicleList.size(); i++)
-  //   root.insertObject(vehicleList[i]);
+  for (int i = 0; i < vehicleList.size(); i++)
+    root.insertObject(vehicleList[i]);
 
   // root.deleteObject(vehicleList[0]);
   // root.deleteObject(vehicleList[2]);
@@ -90,6 +93,13 @@ int main() {
        gnavVertex = root.nnav(2, gnavVertex);
        cout << "gnav: " << gnavVertex.vertexIndex
             << ", dis = " << gnavVertex.shortestDistance << endl;
+
+  cout << "-------------------" << endl;
+  vector<GNAVData> knnList = root.knn(5, 3);
+  for(int i=0;i<knnList.size();i++){
+    cout <<"vertex: "<<knnList[i].vertexIndex<<", dis = "<<knnList[i].shortestDistance<<endl;
+  }
+
 
   //
   // for(int i =0;i<treeNodeNumber;i++){

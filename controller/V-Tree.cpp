@@ -2,6 +2,9 @@
 #include <stdlib.h>
 
 using namespace std;
+
+bool compareGNAVData(GNAVData a, GNAVData b){return (a.shortestDistance<b.shortestDistance);}
+
 ActiveObject::ActiveObject(Vehicle vehicle, float distance)
     : vehicle(vehicle), distance(distance) {}
 
@@ -356,9 +359,9 @@ const GNAVData VTree::gnav(int vertexIndex) const {
       cout << "ERROR: This node do not have this vertex." << endl;
     }
     // return LNAVList[arrIndex];
-    GNAVData result = {LNAVList[arrIndex].getnearestActiveVertex(),
-                       LNAVList[arrIndex].getDistance()};
-    return result;
+    // GNAVData result = {LNAVList[arrIndex].getnearestActiveVertex(),
+    //                    LNAVList[arrIndex].getDistance()};
+    return GNAVData(LNAVList[arrIndex].getnearestActiveVertex(), LNAVList[arrIndex].getDistance());
   }
 
   GNAVData shortDisVertex = getVertexSideNode(vertexIndex).gnav(vertexIndex);
@@ -372,12 +375,21 @@ const GNAVData VTree::gnav(int vertexIndex) const {
       int candidate = SPDist(vertexIndex, sideBoundList[i]) +
                       LNAVList[arrIndex].getDistance();
       if (candidate < shortDisVertex.shortestDistance) {
-        GNAVData result = {LNAVList[i].getnearestActiveVertex(), candidate};
-        shortDisVertex = result;
+        // GNAVData result = {LNAVList[i].getnearestActiveVertex(), candidate};
+        shortDisVertex = GNAVData(LNAVList[i].getnearestActiveVertex(), candidate);
       }
     }
   }
   return shortDisVertex;
+}
+
+const vector<ActiveObject> VTree::getActiveObjectListofIndex(int vertexIndex)const{
+  const VTree *ptTree = this;
+  while(getLayer(*ptTree)>0){
+    ptTree = &ptTree->getVertexSideNode(vertexIndex);
+  }
+  int arrIndex = ptTree->distanceMatrix.getIndex(vertexIndex);
+  return ptTree->LNAVList[arrIndex].getActiveObjectList();
 }
 
 const GNAVData VTree::nnav(int vertexIndex, const GNAVData previousGNAV) {
@@ -386,17 +398,34 @@ const GNAVData VTree::nnav(int vertexIndex, const GNAVData previousGNAV) {
   GNAVData firstNAV;
   do{
     firstNAV = copyTree.gnav(vertexIndex);
-    //delet active object list
-    VTree *ptTree = &copyTree;
-    while(getLayer(*ptTree)>0){
-      ptTree = &ptTree->getVertexSideNode(firstNAV.vertexIndex);
-    }
-    int arrIndex = ptTree->distanceMatrix.getIndex(firstNAV.vertexIndex);
-    vector<ActiveObject> targetList = ptTree->LNAVList[arrIndex].getActiveObjectList();
+
+    vector<ActiveObject> targetList = getActiveObjectListofIndex(firstNAV.vertexIndex);
+
     for(int i=0;i<targetList.size();i++){
       copyTree.deleteObject(targetList[i].getObjectVehicle());
     }
   } while(firstNAV.vertexIndex != previousGNAV.vertexIndex);
 
   return copyTree.gnav(vertexIndex);
+}
+
+vector<GNAVData> VTree::knn(int vertexIndex, int k) const{
+  vector<GNAVData> queue(k);  //GNAVData
+  float maxDis = floatMax;
+
+  // in leaf
+  GNAVData localNAV = gnav(vertexIndex);
+  const vector<ActiveObject> activeObjectList =  getActiveObjectListofIndex(localNAV.vertexIndex);
+
+  for(int i=0;i<activeObjectList.size();i++){
+    float candidate = SPDist(localNAV.vertexIndex, vertexIndex) + activeObjectList[i].getDistance();
+    if(candidate < queue[k-1].shortestDistance) {
+      queue.insert(queue.begin(), GNAVData(localNAV.vertexIndex, candidate));
+      queue.erase(queue.end()-1);
+    }
+    // sort
+    std::sort(queue.begin(), queue.end(), compareGNAVData);
+  }
+  // TODO:: nnav's 
+  return queue;
 }

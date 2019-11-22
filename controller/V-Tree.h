@@ -8,6 +8,7 @@
 #include "Vehicle.h"
 #include "distanceMatrix.h"
 #include "vertex.h"
+#include <algorithm>
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
@@ -47,13 +48,14 @@ public:
   }
 
   bool pushObject(ActiveObject &);
-  const vector<ActiveObject> getActiveObjectList() { return activeObjectList; }
+  const vector<ActiveObject> getActiveObjectList() const{ return activeObjectList; }
   void showActiveObjecList() const;
   void setBoundaryVertex() { isBoundaryVertex = true; };
 };
 struct GNAVData {
   int vertexIndex;
   float shortestDistance;
+  GNAVData(int vertexIndex=-1, float shortestDistance=floatMax):vertexIndex(vertexIndex), shortestDistance(shortestDistance){}
 };
 
 class VTree {
@@ -66,12 +68,14 @@ private:
   static int getLayer(const VTree &);
   static VTree &getLeaveOfIndex(VTree &, int);
 
+  char getNodeSide(int) const;
   void updateAllLeaves();
   void updateNodeLNAV();
 
   VTree &getVertexSideNode(int) const;
   const vector<int> getBoundariesListInSameSide(char) const;
   const vector<float> getShortestDisList(const vector<int>, int) const;
+  const vector<ActiveObject> getActiveObjectListofIndex(int vertexIndex)const;
 
 public:
   const static int vertexNumPerLeaf = 4;
@@ -99,10 +103,15 @@ public:
   const vector<int> getActiveVertexList(); // only for leaf
 
   float SPDist(int, int) const;
-  char getNodeSide(int) const;
+
 
   const GNAVData gnav(int vertexIndex) const;
   const GNAVData nnav(int vertexIndex, const GNAVData) ;
+  vector<GNAVData> knn(int vertexIndex, int k) const;
+
 };
+
+bool compareGNAVData(const GNAVData,const GNAVData);
+
 
 #endif
